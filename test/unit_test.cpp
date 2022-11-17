@@ -6,6 +6,22 @@
 #include <iguana/json.hpp>
 #include <iguana/json_util.hpp>
 #include <iostream>
+#include <iostream>
+#include <fstream>
+
+TEST_CASE("test cooke book number") {
+  MyClass1 cls1;
+  iguana::from_json_file(cls1, "test_data/cookbook_numbers1.json");
+  CHECK(cls1.member0 == 1.23);
+  CHECK(cls1.member1 == 1);
+  CHECK(cls1.member2 == 1200);
+  CHECK(cls1.member3 == 3000);
+
+  MyClass2 cls2;
+  iguana::from_json_file(cls2, "test_data/cookbook_numbers2.json");
+  CHECK(cls2.member_signed == -12345);
+  CHECK(cls2.member_unsigned0 == 12345);
+}
 
 TEST_CASE("test parse item num_t") {
   {
@@ -64,7 +80,20 @@ TEST_CASE("test parse item array_t") {
     CHECK(test[1] == -222);
   }
   {
+    std::string str{"[-1,1,2]"};
+    std::array<unsigned char, 3> test{};
+    iguana::parse_item(test, str.begin(), str.end());
+    CHECK(test[0] == 255);
+    CHECK(test[1] == 1);
+    CHECK(test[2] == 2);
+  }
+  {
     std::string str{"[1, -222,"};
+    std::array<int, 2> test;
+    CHECK_NOTHROW(iguana::parse_item(test, str.begin(), str.end()));
+  }
+  {
+    std::string str{"[ ]  "};
     std::array<int, 2> test;
     CHECK_NOTHROW(iguana::parse_item(test, str.begin(), str.end()));
   }
@@ -72,11 +101,6 @@ TEST_CASE("test parse item array_t") {
     std::string str{"[   "};
     std::array<int, 2> test;
     CHECK_THROWS(iguana::parse_item(test, str.begin(), str.end()));
-  }
-  {
-    std::string str{"[ ]  "};
-    std::array<int, 2> test;
-    CHECK_NOTHROW(iguana::parse_item(test, str.begin(), str.end()));
   }
   {
     std::string str{"[ 1.2345]  "};
@@ -180,8 +204,8 @@ TEST_CASE("test parse item seq container") {
     CHECK_THROWS(iguana::parse_item(test, str.begin(), str.end()));
   }
   {
-    std::string str{"[0,1,2"};
-    std::array<int, 3> test{};
+    std::string str{"["};
+    std::vector<int> test{};
     CHECK_THROWS(iguana::parse_item(test, str.begin(), str.end()));
   }
 }
@@ -222,6 +246,11 @@ TEST_CASE("test parse item char")
     char test{};
     iguana::parse_item(test, str.begin(), str.end());
     CHECK(test == 'a');
+  }
+  {
+    std::string str{"\""};
+    char test{};
+    CHECK_THROWS(iguana::parse_item(test, str.begin(), str.end()));
   }
 }
 
@@ -302,6 +331,25 @@ TEST_CASE("test parse item optional")
     std::optional<int> test{};
     iguana::parse_item(test, str.begin(), str.end());
     CHECK(*test == 1);
+  }
+  {
+    std::string str{""};
+    std::optional<int> test{1};
+    CHECK_THROWS(iguana::parse_item(test, str.begin(), str.end()));
+  }
+}
+TEST_CASE("test from json file") {
+  { 
+    std::vector<int> test;
+    CHECK_THROWS(iguana::from_json_file(test, ".json"));
+   }
+  {
+    std::vector<int> test;
+    CHECK_THROWS(iguana::from_json_file(test, "./"));
+  }
+  {
+    std::vector<int> test;
+    CHECK_THROWS(iguana::from_json_file(test, __FILE__));
   }
 }
 
